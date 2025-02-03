@@ -1,21 +1,32 @@
-import React, { useState } from "react";
-import { FaPlay, FaPause, FaRedo, FaFlag } from "react-icons/fa";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import Timer from "./Timer";
 import ControlButtons from "./ControlButtons";
 
 function StopWatch() {
+    const navigate = useNavigate();
+    const location = useLocation();
     const [isActive, setIsActive] = useState(false);
     const [isPaused, setIsPaused] = useState(true);
     const [time, setTime] = useState(0);
     const [flags, setFlags] = useState([]);
     const [averageTime, setAverageTime] = useState(null);
+    
+    const storedName = localStorage.getItem("userName");
+    const [name, setName] = useState(location.state?.name || storedName || "Guest");
 
-    React.useEffect(() => {
+    useEffect(() => {
+        if (name !== "Guest") {
+            localStorage.setItem("userName", name);
+        }
+    }, [name]);
+
+    useEffect(() => {
         let interval = null;
         if (isActive && !isPaused) {
             interval = setInterval(() => {
-                setTime((prevTime) => prevTime + 1000); // Increment by 1000 milliseconds (1 second)
-            }, 1000); // Update every second
+                setTime((prevTime) => prevTime + 10);
+            }, 10);
         } else {
             clearInterval(interval);
         }
@@ -29,8 +40,7 @@ function StopWatch() {
 
     const handlePause = () => {
         setIsPaused(true);
-        // Calculate average time using recorded differences when paused
-        calculateAverageTime();
+        calculateAverageTime(flags);
     };
 
     const handleReset = () => {
@@ -43,55 +53,77 @@ function StopWatch() {
 
     const handleFlag = () => {
         if (flags.length < 10) {
-            setFlags([...flags, time]);
-            if (flags.length === 9) {
-                // If 10 laps are completed, calculate average time
-                calculateAverageTime();
+            const newFlags = [...flags, time];
+            setFlags(newFlags);
+            if (newFlags.length === 10) {
+                setIsPaused(true);
+                setIsActive(false);
+                calculateAverageTime(newFlags);
             }
         }
     };
 
-    const calculateAverageTime = () => {
-        const differences = calculateLapDifferences();
-        if (differences.length === 0) return; // No differences to average
+    const calculateAverageTime = (flagTimes) => {
+        if (flagTimes.length < 1) return;
+
+        const differences = calculateLapDifferences(flagTimes);
         const totalDifference = differences.reduce((acc, curr) => acc + curr, 0);
-        const average = totalDifference / differences.length; // Calculate average of differences
+        const average = totalDifference / differences.length;
+
         setAverageTime(average);
     };
 
     const formatTime = (time) => {
-        const hours = Math.floor(time / 3600000); // Convert milliseconds to hours
-        const minutes = Math.floor((time % 3600000) / 60000); // Convert milliseconds to minutes
-        const seconds = Math.floor((time % 60000) / 1000); // Convert milliseconds to seconds
-        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`; // Format as hh:mm:ss
+        const minutes = Math.floor(time / 60000); // Extract minutes
+        const seconds = Math.floor((time % 60000) / 1000); // Extract seconds
+        const milliseconds = Math.floor((time % 1000) / 10); // Extract milliseconds (2 digits)
+    
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}:${String(milliseconds).padStart(2, '0')}`;
     };
+    
 
-    const calculateLapDifferences = () => {
-        return flags.map((flag, index) => {
-            if (index === 0) {
-                return flag; // First lap shows total time from 00:00:00
-            } else {
-                return flag - flags[index - 1]; // Subsequent laps show difference from previous lap
-            }
+    const calculateLapDifferences = (flagTimes) => {
+        return flagTimes.map((flag, index) => {
+            if (index === 0) return flag;
+            return flag - flagTimes[index - 1];
         });
     };
 
-    const lapDifferences = calculateLapDifferences();
+    const handleSubmit = () => {
+        const lapDifferences = calculateLapDifferences(flags);
+        const formattedLapDifferences = lapDifferences.map(formatTime);
+
+        // Ensure we always send an array of 10 elements
+        const fullLapDifferences = [...formattedLapDifferences, ...Array(10 - formattedLapDifferences.length).fill("")];
+
+        navigate("/", {
+            state: {
+                name: name,
+                lapDifferences: fullLapDifferences,
+                averageTime: formatTime(averageTime || 0),
+            },
+        });
+    };
+
+    const lapDifferences = calculateLapDifferences(flags);
 
     return (
-        <div className="stop-watch">
-            <Timer time={time} />
-            <ControlButtons
-                active={isActive}
-                isPaused={isPaused}
-                handleStart={handleStart}
-                handlePause={handlePause}
-                handleReset={handleReset}
-                handleFlag={handleFlag}
-                showFlagButton={!isPaused && isActive} // Show flag button only if active and not paused
-            />
+        <>
+            <h2>Welcome, {name}</h2>
+            <div className="stop-watch">
+                <Timer time={time} />
+                <ControlButtons
+                    active={isActive}
+                    isPaused={isPaused}
+                    handleStart={handleStart}
+                    handlePause={handlePause}
+                    handleReset={handleReset}
+                    handleFlag={handleFlag}
+                    showFlagButton={!isPaused && isActive && flags.length < 10}
+                />
+            </div>
             <div className="flags">
-                <h3>Flags</h3>
+                <h3>Lap Times</h3>
                 <table>
                     <thead>
                         <tr>
@@ -111,12 +143,11 @@ function StopWatch() {
                     </tbody>
                 </table>
                 {averageTime !== null && (
-                    <div>
-                        <h4>Average Time of Differences: {formatTime(averageTime)}</h4>
-                    </div>
+                    <h4>Average Lap Difference: {formatTime(averageTime)}</h4>
                 )}
             </div>
-        </div>
+            {flags.length > 0 && <button onClick={handleSubmit}>Submit</button>}
+        </>
     );
 }
 
