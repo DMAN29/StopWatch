@@ -5,6 +5,9 @@ const HomePage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [name, setName] = useState("");
+    const [operationName, setOperationName] = useState("");
+    const [operationId, setOperationId] = useState("");
+    const [section, setSection] = useState("");
     const [data, setData] = useState(() => {
         const storedData = JSON.parse(localStorage.getItem("lapData"));
         return storedData ? storedData : [];
@@ -29,8 +32,8 @@ const HomePage = () => {
     const handleCancel = () => setIsModalOpen(false);
 
     const handleContinue = () => {
-        if (name.trim() !== "") {
-            navigate("/stopwatch", { state: { name } });
+        if (name.trim() !== "" && operationName.trim() !== "" && operationId.trim() !== "" && section.trim() !== "") {
+            navigate("/stopwatch", { state: { name, operationName, operationId, section } });
         }
     };
 
@@ -52,13 +55,11 @@ const HomePage = () => {
             {isModalOpen && (
                 <div className="modal">
                     <div className="modal-content">
-                        <h3>Enter Name</h3>
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="Name"
-                        />
+                        <h3>Enter Details</h3>
+                        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
+                        <input type="text" value={operationName} onChange={(e) => setOperationName(e.target.value)} placeholder="Operation Name" />
+                        <input type="text" value={operationId} onChange={(e) => setOperationId(e.target.value)} placeholder="Operation ID" />
+                        <input type="text" value={section} onChange={(e) => setSection(e.target.value)} placeholder="Section" />
                         <div className="modal-buttons">
                             <button onClick={handleContinue}>Continue</button>
                             <button onClick={handleCancel}>Cancel</button>
@@ -72,12 +73,15 @@ const HomePage = () => {
                     <tr>
                         <th>S.No</th> {/* New S.No column */}
                         <th>Name</th>
+                        <th>Operation Name</th>
+                        <th>Operation ID</th>
+                        <th>Section</th>
                         {[...Array(10)].map((_, index) => (
                             <th key={index}>Lap {index + 1}</th>
                         ))}
                         <th>Average Time</th>
-                        <th>Allowance</th> {/* New column for allowance */}
-                        <th>Expected Production/Hour</th> {/* New column for expected production */}
+                        <th>Allowance</th>
+                        <th>Expected PPH</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -86,12 +90,15 @@ const HomePage = () => {
                         <tr key={index}>
                             <td>{index + 1}</td> {/* Serial number */}
                             <td>{entry.name}</td>
+                            <td>{entry.operationName}</td>
+                            <td>{entry.operationId}</td>
+                            <td>{entry.section}</td>
                             {[...Array(10)].map((_, lapIndex) => (
-                                <td key={lapIndex}>{entry.lapDifferences[lapIndex] || "-"}</td>
+                                <td key={lapIndex}>{entry.lapDifferences[lapIndex]}</td>
                             ))}
-                            <td>{entry.averageTime || "-"}</td>
-                            <td>{entry.allowance || "-"}</td> {/* Allowance value */}
-                            <td>{entry.expectedProductionPerHour || "-"}</td> {/* Expected production value */}
+                            <td>{entry.averageTime}</td>
+                            <td>{entry.allowance}</td>
+                            <td>{entry.expectedProductionPerHour}</td>
                             <td>
                                 <button onClick={() => handleDelete(index)}>Delete</button>
                             </td>
