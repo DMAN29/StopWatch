@@ -6,25 +6,21 @@ const HomePage = () => {
     const location = useLocation();
     const [name, setName] = useState("");
     const [data, setData] = useState(() => {
-        // Initialize state with data from localStorage only once
         const storedData = JSON.parse(localStorage.getItem("lapData"));
-        return storedData ? storedData : []; // Return empty array if nothing is found
+        return storedData ? storedData : [];
     });
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
-        // Update data when a new entry is added
         if (location.state) {
             setData((prevData) => {
                 const isDuplicate = prevData.some(entry => entry.name === location.state.name);
                 if (!isDuplicate) {
                     const updatedData = [...prevData, location.state];
-
-                    // Save updated data to localStorage
                     localStorage.setItem("lapData", JSON.stringify(updatedData));
                     return updatedData;
                 }
-                return prevData; // If duplicate, return previous data
+                return prevData;
             });
         }
     }, [location.state]);
@@ -43,9 +39,9 @@ const HomePage = () => {
         setData(updatedData);
         
         if (updatedData.length === 0) {
-            localStorage.removeItem("lapData"); // Clear localStorage if no entries are left
+            localStorage.removeItem("lapData");
         } else {
-            localStorage.setItem("lapData", JSON.stringify(updatedData)); // Update localStorage
+            localStorage.setItem("lapData", JSON.stringify(updatedData));
         }
     };
 
@@ -74,24 +70,30 @@ const HomePage = () => {
             <table>
                 <thead>
                     <tr>
+                        <th>S.No</th> {/* New S.No column */}
                         <th>Name</th>
                         {[...Array(10)].map((_, index) => (
                             <th key={index}>Lap {index + 1}</th>
                         ))}
                         <th>Average Time</th>
-                        <th>Actions</th> {/* New column for actions */}
+                        <th>Allowance</th> {/* New column for allowance */}
+                        <th>Expected Production/Hour</th> {/* New column for expected production */}
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {data.map((entry, index) => (
                         <tr key={index}>
+                            <td>{index + 1}</td> {/* Serial number */}
                             <td>{entry.name}</td>
                             {[...Array(10)].map((_, lapIndex) => (
                                 <td key={lapIndex}>{entry.lapDifferences[lapIndex] || "-"}</td>
                             ))}
                             <td>{entry.averageTime || "-"}</td>
+                            <td>{entry.allowance || "-"}</td> {/* Allowance value */}
+                            <td>{entry.expectedProductionPerHour || "-"}</td> {/* Expected production value */}
                             <td>
-                                <button onClick={() => handleDelete(index)}>Delete</button> {/* Delete button */}
+                                <button onClick={() => handleDelete(index)}>Delete</button>
                             </td>
                         </tr>
                     ))}

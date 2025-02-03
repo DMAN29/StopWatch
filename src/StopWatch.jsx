@@ -14,6 +14,9 @@ function StopWatch() {
     
     const storedName = localStorage.getItem("userName");
     const [name, setName] = useState(location.state?.name || storedName || "Guest");
+    const [operationName, setOperationName] = useState(location.state?.operationName || "");
+    const [operationId, setOperationId] = useState(location.state?.operationId || "");
+    const [section, setSection] = useState(location.state?.section || "");
 
     useEffect(() => {
         if (name !== "Guest") {
@@ -74,13 +77,11 @@ function StopWatch() {
     };
 
     const formatTime = (time) => {
-        const minutes = Math.floor(time / 60000); // Extract minutes
-        const seconds = Math.floor((time % 60000) / 1000); // Extract seconds
-        const milliseconds = Math.floor((time % 1000) / 10); // Extract milliseconds (2 digits)
-    
+        const minutes = Math.floor(time / 60000);
+        const seconds = Math.floor((time % 60000) / 1000);
+        const milliseconds = Math.floor((time % 1000) / 10);
         return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}:${String(milliseconds).padStart(2, '0')}`;
     };
-    
 
     const calculateLapDifferences = (flagTimes) => {
         return flagTimes.map((flag, index) => {
@@ -89,18 +90,35 @@ function StopWatch() {
         });
     };
 
+    // New function to calculate allowance and expected production
+    const calculateAllowanceAndProduction = (averageTime) => {
+        const avgTimeInMinutes = averageTime ? averageTime / 60000 : 0; // Convert to minutes
+        const allowance = avgTimeInMinutes ? avgTimeInMinutes + (avgTimeInMinutes * 0.2) : 0; // 20% of average time
+        const expectedProductionPerHour = avgTimeInMinutes ? Math.round(60 / avgTimeInMinutes) : 0; // Production per hour based on avg time
+        return {
+            allowance: formatTime(allowance * 60000), // Convert back to formatted time
+            expectedProductionPerHour, // Return rounded value
+        };
+    };
+
     const handleSubmit = () => {
         const lapDifferences = calculateLapDifferences(flags);
         const formattedLapDifferences = lapDifferences.map(formatTime);
 
-        // Ensure we always send an array of 10 elements
         const fullLapDifferences = [...formattedLapDifferences, ...Array(10 - formattedLapDifferences.length).fill("")];
+
+        const { allowance, expectedProductionPerHour } = calculateAllowanceAndProduction(averageTime || 0);
 
         navigate("/", {
             state: {
-                name: name,
+                name,
+                operationName,
+                operationId,
+                section,
                 lapDifferences: fullLapDifferences,
                 averageTime: formatTime(averageTime || 0),
+                allowance,
+                expectedProductionPerHour,
             },
         });
     };
