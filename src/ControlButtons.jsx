@@ -18,14 +18,14 @@ export default function ControlButtons({
 
     const ActiveButtons = (
         <div className="btn-grp">
+            <div className="btn btn-one" onClick={handlePause}>
+                <FaPause />
+            </div>
             {showFlagButton && (
                 <div className="btn btn-one" onClick={handleFlag}>
                     <FaFlag />
                 </div>
             )}
-            <div className="btn btn-one" onClick={handlePause}>
-                <FaPause />
-            </div>
             <div className="btn btn-two" onClick={handleReset}>
                 <FaRedo />
             </div>
